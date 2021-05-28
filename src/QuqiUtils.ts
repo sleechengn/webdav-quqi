@@ -1,10 +1,29 @@
-import * as fs from 'fs';
-import * as path from 'path';
 import * as crypto from 'crypto';
+import {ReadStream} from "fs";
+const { Readable } = require('stream');
 
 export default {
-  hash(filePath: string) {
-    let buffer = fs.readFileSync(filePath);
+
+  bufferToStream(buffer) {
+    return new Readable({
+      read() {
+        this.push(buffer);
+        this.push(null);
+      }
+    });
+  },
+
+  streamToBuffer(stream) {
+    return new Promise((resolve, reject) => {
+      let buffers = [];
+      stream.on('error', reject);
+      stream.on('data', (data) => buffers.push(data))
+      stream.on('end', () => resolve(Buffer.concat(buffers)))
+    });
+  },
+
+  async hash(readStream: ReadStream) {
+    let buffer = await this.streamToBuffer(readStream);
     let fsMd5 = crypto.createHash('md5');
     fsMd5.update(buffer);
     let md5 = fsMd5.digest('hex');

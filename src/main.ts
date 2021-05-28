@@ -1,5 +1,5 @@
 // TypeScript
-import { v2 as webdav } from 'webdav-server'
+import {v2 as webdav} from 'webdav-server'
 import {QuqiFileSystem} from "./QuqiFileSystem";
 
 // User manager (tells who are the users)
@@ -8,7 +8,7 @@ const user = userManager.addUser('admin', 'admin', false);
 
 // Privilege manager (tells which users can access which files/folders)
 const privilegeManager = new webdav.SimplePathPrivilegeManager();
-privilegeManager.setRights(user, '/', [ 'all' ]);
+privilegeManager.setRights(user, '/', ['all']);
 
 const server = new webdav.WebDAVServer({
   port: 1900,
@@ -35,6 +35,8 @@ server.afterRequest((arg, next) => {
 // })
 //
 
-server.setFileSystem('/dav', new QuqiFileSystem(process.env.QUQI_ACCOUNT, process.env.QUQI_PASSWORD, process.env.QUQI_USER_ID), (success) => {
+let cloudId = parseInt(process.env.QUQI_CLOUD_ID)
+let rootDirId = parseInt(process.env.QUQI_ROOT_DIR_ID)
+server.setFileSystem('/dav', new QuqiFileSystem(process.env.QUQI_ACCOUNT, process.env.QUQI_PASSWORD, cloudId, rootDirId), (success) => {
   server.start(() => console.log('READY'));
 })
