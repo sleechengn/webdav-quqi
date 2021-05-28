@@ -5,4 +5,6 @@ import QuqiAction from './QuqiAction';
   await quqiAction.login();
   await quqiAction.list(43);
   await quqiAction.upload(43, '/tmp/1622171281916.jpg')
+  await quqiAction.download(82, '/tmp/a')
+  await quqiAction.rename(98, 'xxxe3')
 })();
