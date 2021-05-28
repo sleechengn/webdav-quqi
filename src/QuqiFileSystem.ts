@@ -11,9 +11,8 @@ import {IPropertyManager, LocalPropertyManager} from "webdav-server/lib/manager/
 import {ResourceType, ReturnCallback, SimpleCallback} from "webdav-server";
 import {FileSystemSerializer} from "webdav-server/lib/manager/v2/fileSystem/Serialization";
 import {join as pathJoin, basename, dirname} from 'path'
-import {Readable, Writable, PassThrough} from "stream";
+import {Readable, Writable} from "stream";
 import QuqiAction from "./QuqiAction";
-import QuqiUtils from "./QuqiUtils";
 
 
 export class QuqiFileSystemResource {
@@ -157,10 +156,10 @@ export class QuqiFileSystem extends FileSystem {
     let resource = this.resources[path.toString()];
     console.log("getPropertyFromResource", propertyName);
     if (!resource) {
-      callback(new Error("资源不存在"), null)
-    } else {
-      callback(null, resource[propertyName]);
+      resource = new QuqiFileSystemResource(0, ResourceType.File, 0, 0, 0);
+      this.resources[path.toString()] = resource;
     }
+    callback(null, resource[propertyName]);
   }
 
   protected _lockManager(path: Path, ctx: LockManagerInfo, callback: ReturnCallback<ILockManager>): void {

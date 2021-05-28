@@ -24,17 +24,6 @@ server.afterRequest((arg, next) => {
 //   server.start(() => console.log('READY'));
 // })
 
-// server.rootFileSystem().addSubTree(server.createExternalContext(), '/', {
-//   'folder1': {                                // /folder1
-//     'file1.txt': webdav.ResourceType.File,  // /folder1/file1.txt
-//     'file2.txt': webdav.ResourceType.File   // /folder1/file2.txt
-//   },
-//   'file0.txt': webdav.ResourceType.File       // /file0.txt
-// }, ()=>{
-//   server.start(() => console.log('READY'));
-// })
-//
-
 let cloudId = parseInt(process.env.QUQI_CLOUD_ID)
 let rootDirId = parseInt(process.env.QUQI_ROOT_DIR_ID)
 server.setFileSystem('/dav', new QuqiFileSystem(process.env.QUQI_ACCOUNT, process.env.QUQI_PASSWORD, cloudId, rootDirId), (success) => {
