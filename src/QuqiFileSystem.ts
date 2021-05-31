@@ -9,7 +9,7 @@ import {
 } from "./npm-WebDAV-Server/manager/v2/fileSystem/ContextInfo";
 import {ILockManager, LocalLockManager} from "./npm-WebDAV-Server/manager/v2/fileSystem/LockManager";
 import {IPropertyManager, LocalPropertyManager} from "./npm-WebDAV-Server/manager/v2/fileSystem/PropertyManager";
-import {ResourceType, ReturnCallback, SimpleCallback} from "webdav-server";
+import {ResourceType, ReturnCallback, SimpleCallback} from "./npm-WebDAV-Server";
 import {FileSystemSerializer} from "./npm-WebDAV-Server/manager/v2/fileSystem/Serialization";
 import {join as pathJoin, basename, dirname} from 'path'
 import {Readable, Writable} from "stream";
