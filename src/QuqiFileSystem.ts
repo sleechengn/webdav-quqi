@@ -12,6 +12,7 @@ import {ResourceType, ReturnCallback, SimpleCallback} from "webdav-server";
 import {FileSystemSerializer} from "webdav-server/lib/manager/v2/fileSystem/Serialization";
 import {join as pathJoin, basename, dirname} from 'path'
 import {Readable, Writable} from "stream";
+import * as when from "when";
 import QuqiAction from "./QuqiAction";
 
 
@@ -76,6 +77,7 @@ export class QuqiFileSystem extends FileSystem {
   }
 
   protected _create(path: Path, ctx: CreateInfo, _callback: SimpleCallback): void {
+    console.log("_create", path.toString());
     const {parentId, realPath} = this.getRealPath(path);
     let fileName = basename(realPath);
 
@@ -93,6 +95,7 @@ export class QuqiFileSystem extends FileSystem {
   }
 
   protected _delete(path: Path, ctx: DeleteInfo, _callback: SimpleCallback): void {
+    console.log("_delete", path.toString());
     const {nodeId} = this.getRealPath(path);
 
     const callback = (e) => {
@@ -107,6 +110,7 @@ export class QuqiFileSystem extends FileSystem {
   }
 
   protected _openWriteStream(path: Path, ctx: OpenWriteStreamInfo, callback: ReturnCallback<Writable>): void {
+    console.log("_openWriteStream", path.toString());
     const {realPath, parentId} = this.getRealPath(path);
     let fileName = basename(realPath);
     this.quqiAction.upload(parentId, fileName).then(rs => {
@@ -117,6 +121,7 @@ export class QuqiFileSystem extends FileSystem {
   }
 
   protected _openReadStream(path: Path, ctx: OpenReadStreamInfo, callback: ReturnCallback<Readable>): void {
+    console.log("_openReadStream", path.toString());
     const {nodeId} = this.getRealPath(path);
     this.quqiAction.download(nodeId).then(readStream => {
       callback(null, readStream);
@@ -126,13 +131,14 @@ export class QuqiFileSystem extends FileSystem {
   }
 
   protected _move(pathFrom: Path, pathTo: Path, ctx: MoveInfo, callback: ReturnCallback<boolean>): void {
+    console.log("_move", pathFrom.toString(), "=>", pathTo.toString());
     if (dirname(pathFrom.toString()) !== dirname(pathTo.toString())) {
-      console.log("_move 未实现");
+      console.error("_move 未实现");
       callback(new Error("未实现"), false)
     } else {
       const {nodeId} = this.getRealPath(pathFrom);
       this.quqiAction.rename(nodeId, basename(pathTo.toString())).then(rs => {
-        console.log("_move 成功");
+        console.log("_move 成功", pathFrom.toString(), "=>", pathTo.toString());
         callback(null, true);
       }).catch(e => {
         callback(e, false)
@@ -141,6 +147,7 @@ export class QuqiFileSystem extends FileSystem {
   }
 
   protected _size(path: Path, ctx: SizeInfo, callback: ReturnCallback<number>): void {
+    console.log("_size", path.toString());
     this.getStatProperty(path, ctx, 'size', callback);
   }
 
@@ -154,11 +161,12 @@ export class QuqiFileSystem extends FileSystem {
    */
   protected getPropertyFromResource(path: Path, ctx: any, propertyName: string, callback: ReturnCallback<any>): void {
     let resource = this.resources[path.toString()];
-    console.log("getPropertyFromResource", propertyName);
+    console.log("getPropertyFromResource", path.toString(), propertyName);
     if (!resource) {
       resource = new QuqiFileSystemResource(0, ResourceType.File, 0, 0, 0);
       this.resources[path.toString()] = resource;
     }
+    console.log("getPropertyFromResource", propertyName, resource[propertyName]);
     callback(null, resource[propertyName]);
   }
 
@@ -171,6 +179,7 @@ export class QuqiFileSystem extends FileSystem {
   }
 
   protected _readDir(path: Path, ctx: ReadDirInfo, callback: ReturnCallback<string[] | Path[]>): void {
+    console.log("_readDir", path.toString());
     const {nodeId, realPath} = this.getRealPath(path);
 
     this.quqiAction.list(nodeId).then(rs => {
@@ -193,18 +202,16 @@ export class QuqiFileSystem extends FileSystem {
 
   protected getStatProperty(path: Path, ctx: any, propertyName: string, callback: ReturnCallback<any>): void {
     const {resource} = this.getRealPath(path);
-    console.log("getStatProperty", propertyName)
-    let propertyNameInResource = "";
+    console.log("getStatProperty", path.toString(), propertyName)
+    let value = resource ? resource[propertyName] : 0
     switch (propertyName) {
       case "birthtime":
       case "mtime":
-        propertyNameInResource = "addTime";
-        break;
-      case "size":
-        propertyNameInResource = "size";
+        value = resource ? resource.addTime * 1000 : 0
         break;
     }
-    callback(null, resource ? resource[propertyNameInResource] : 0)
+    console.log("getStatProperty", propertyName, value);
+    callback(null, value);
   }
 
   protected getStatDateProperty(path: Path, ctx: any, propertyName: string, callback: ReturnCallback<number>): void {
@@ -212,18 +219,68 @@ export class QuqiFileSystem extends FileSystem {
   }
 
   protected _creationDate(path: Path, ctx: CreationDateInfo, callback: ReturnCallback<number>): void {
+    console.log("_creationDate", path.toString());
     this.getStatDateProperty(path, ctx, 'birthtime', callback);
   }
 
   protected _lastModifiedDate(path: Path, ctx: LastModifiedDateInfo, callback: ReturnCallback<number>): void {
+    console.log("_lastModifiedDate", path.toString());
     this.getStatDateProperty(path, ctx, 'mtime', callback);
   }
 
   protected _type(path: Path, ctx: TypeInfo, callback: ReturnCallback<ResourceType>): void {
+    console.log("_type", path.toString());
     const {resource} = this.getRealPath(path);
-    if (!resource)
-      callback(new Error("文件不存在"), null);
-    else
-      callback(null, resource.type);
+
+    const _callback = function (resource) {
+      if (!resource) {
+        let errorMessage = "文件不存在: " + path.toString();
+        console.error("_type", errorMessage);
+        callback(new Error(errorMessage), null);
+      } else
+        callback(null, resource.type);
+    }
+
+    if (!resource) {
+      this.reloadParentsDirectories(path.toString()).then(() => {
+        const {resource} = this.getRealPath(path);
+        _callback(resource);
+      });
+    } else
+      _callback(resource);
+  }
+
+  private reloadParentsDirectories(path: string) {
+    const parentDir = dirname(path);
+    const resource = this.resources[parentDir];
+    return when().then(() => {
+      if (!resource) {
+        if (parentDir === '/') {
+          return this.requestDirList(this.rootDirId, "/")
+        } else {
+          return this.reloadParentsDirectories(parentDir);
+        }
+      } else {
+        return;
+      }
+    }).then(() => {
+      const resource = this.resources[parentDir];
+      return this.requestDirList(resource.nid, parentDir)
+    })
+  }
+
+  private requestDirList(nid, dir) {
+    return this.quqiAction.list(nid).then(rs => {
+      rs.data.dir.forEach(item => {
+        let itemPath = pathJoin(dir, item.name);
+        this.resources[itemPath] = new QuqiFileSystemResource(item.nid, ResourceType.Directory, item.parent_id, item.add_time, 0);
+      })
+      rs.data.file.forEach(item => {
+        let itemPath = pathJoin(dir, item.name);
+        this.resources[itemPath] = new QuqiFileSystemResource(item.nid, ResourceType.File, item.parent_id, item.add_time, item.size);
+      })
+    }).catch(e => {
+      console.error(e);
+    });
   }
 }
