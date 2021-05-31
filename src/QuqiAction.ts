@@ -1,11 +1,8 @@
 import axios from 'axios';
 import * as fs from 'fs';
-import * as path from 'path';
 import * as when from 'when';
 import * as _ from 'lodash';
 import * as FormData from 'form-data';
-
-const {Writable} = require('stream');
 
 import QuqiUtils from './QuqiUtils';
 
@@ -38,77 +35,67 @@ export default class QuqiAction {
     return this.doAction(url, postData);
   }
 
-  public async uploadByPath(dirId: number, filePath: string) {
-    let stat = fs.statSync(filePath);
-    let fileName = path.basename(filePath);
+  public async uploadByPath(dirId: number, fileName: string, filePath: string) {
+    const stat = fs.statSync(filePath);
     const readStream = fs.createReadStream(filePath)
-    let hash = await QuqiUtils.hash(readStream);
+    const hash = await QuqiUtils.hash(filePath);
     console.log(JSON.stringify(hash));
-    // return this.upload(dirId, fileName, stat.size, hash.md5, hash.sha, readStream);
-  }
 
-  public async upload(dirId: number, fileName: string) {
-    return new Promise((resolve) => {
-      const writeStream = new Writable();
-      // writeStream.on("finish", async ()=>{
-      //   let url = 'https://quqi.com/api/upload/v1/file/init';
-      //   let postData = `quqi_id=${this.quqiId}&parent_id=${dirId}&size=${size}&file_name=${fileName}&md5=${md5}&sha=${sha}&is_slice=false`;
-      //   let job = await this.doAction(url, postData);
-      //   console.log(JSON.stringify(job));
-      //   if (job.data.exist) {
-      //     console.log("极速上传成功");
-      //     return true;
-      //   }
-      //
-      //   if (job.data.upload_id) {
-      //     // 大文件需要分片上传
-      //     console.error("大文件需要分片上传");
-      //   } else {
-      //     // 小文件直接上传
-      //     let uploadUrl = `${job.data.url}/upload/v1/simpleUpload`;
-      //     let params = {
-      //       quqi_id: this.quqiId,
-      //       token: job.data.token,
-      //       task_id: job.data.task_id,
-      //       is_dir: 0,
-      //       upload_time: Math.floor(new Date().getTime() / 1000)
-      //     };
-      //     // @ts-ignore
-      //     params.sign = QuqiUtils.httpParamsign(params);
-      //     uploadUrl += "?" + QuqiUtils.queryStringify(params);
-      //
-      //     let formData = new FormData();
-      //     for (let i in params) {
-      //       formData.append(i, params[i]);
-      //     }
-      //     console.log("params", JSON.stringify(params));
-      //     formData.append('file', readStream);
-      //
-      //     let headers = formData.getHeaders();//获取headers
-      //     return new Promise((resolve, reject) => {
-      //       //获取form-data长度
-      //       formData.getLength(async function (err, length) {
-      //         if (err) {
-      //           reject(err);
-      //           return;
-      //         }
-      //         //设置长度，important!!!
-      //         headers['content-length'] = length;
-      //
-      //         console.log(uploadUrl);
-      //         await axios.post(uploadUrl, formData, {headers}).then(res => {
-      //           console.log("上传成功", JSON.stringify(res.data));
-      //           resolve(res.data);
-      //         }).catch(res => {
-      //           console.log(res);
-      //           reject(res.data);
-      //         })
-      //       })
-      //     })
-      //   }
-      // })
-      resolve(writeStream)
-    })
+    const url = 'https://quqi.com/api/upload/v1/file/init';
+    const postData = `quqi_id=${this.quqiId}&parent_id=${dirId}&size=${stat.size}&file_name=${fileName}&md5=${hash.md5}&sha=${hash.sha}&is_slice=false`;
+    const job = await this.doAction(url, postData);
+    console.log(JSON.stringify(job));
+    if (job.data.exist) {
+      console.log("极速上传成功");
+      return true;
+    }
+
+    if (job.data.upload_id) {
+      // 大文件需要分片上传
+      console.error("大文件需要分片上传");
+    } else {
+      // 小文件直接上传
+      let uploadUrl = `${job.data.url}/upload/v1/simpleUpload`;
+      let params = {
+        quqi_id: this.quqiId,
+        token: job.data.token,
+        task_id: job.data.task_id,
+        is_dir: 0,
+        upload_time: Math.floor(new Date().getTime() / 1000)
+      };
+      // @ts-ignore
+      params.sign = QuqiUtils.httpParamsign(params);
+      uploadUrl += "?" + QuqiUtils.queryStringify(params);
+
+      let formData = new FormData();
+      for (let i in params) {
+        formData.append(i, params[i]);
+      }
+      console.log("params", JSON.stringify(params));
+      formData.append('file', readStream);
+
+      let headers = formData.getHeaders();//获取headers
+      return new Promise((resolve, reject) => {
+        //获取form-data长度
+        formData.getLength(async function (err, length) {
+          if (err) {
+            reject(err);
+            return;
+          }
+          //设置长度，important!!!
+          headers['content-length'] = length;
+
+          console.log(uploadUrl);
+          await axios.post(uploadUrl, formData, {headers}).then(res => {
+            console.log("上传成功", JSON.stringify(res.data));
+            resolve(res.data);
+          }).catch(res => {
+            console.log(res);
+            reject(res.data);
+          })
+        })
+      })
+    }
   }
 
   public async download(nid: number) {

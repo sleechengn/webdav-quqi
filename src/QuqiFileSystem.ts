@@ -1,5 +1,6 @@
 import {FileSystem} from "webdav-server/lib/manager/v2/fileSystem/FileSystem";
 import {Path} from "webdav-server/lib/manager/v2/Path";
+import {Errors} from "webdav-server/lib/index.v2";
 import {
   CreateInfo, CreationDateInfo, DeleteInfo, LastModifiedDateInfo,
   LockManagerInfo, MoveInfo, OpenReadStreamInfo, OpenWriteStreamInfo,
@@ -13,8 +14,11 @@ import {FileSystemSerializer} from "webdav-server/lib/manager/v2/fileSystem/Seri
 import {join as pathJoin, basename, dirname} from 'path'
 import {Readable, Writable} from "stream";
 import * as when from "when";
+import * as fs from "fs";
+
 import QuqiAction from "./QuqiAction";
 
+const tmpDir = pathJoin(__dirname, "tmp")
 
 export class QuqiFileSystemResource {
   props: LocalPropertyManager
@@ -62,6 +66,13 @@ export class QuqiFileSystem extends FileSystem {
     this.resources = {
       '/': new QuqiFileSystemResource(rootDirId, ResourceType.Directory, 0, 0, 0)
     };
+
+    // 自动创建临时目录
+    try {
+      fs.statSync(tmpDir)
+    } catch (e) {
+      fs.mkdirSync(tmpDir)
+    }
   }
 
   protected getRealPath(path: Path) {
@@ -69,7 +80,7 @@ export class QuqiFileSystem extends FileSystem {
     const parentPath = dirname(sPath);
 
     return {
-      realPath: pathJoin('/', sPath.substr(1)),
+      realPath: sPath,
       parentId: this.resources[parentPath]?.nid,
       nodeId: this.resources[sPath]?.nid,
       resource: this.resources[sPath]
@@ -90,7 +101,16 @@ export class QuqiFileSystem extends FileSystem {
         _callback(e);
       })
     } else {
-      _callback(null);
+      // 先上传一个临时文件
+      const tmpFile = pathJoin(tmpDir, `tmp-lock-file-${new Date().getTime()}`);
+      fs.writeFileSync(tmpFile, Buffer.alloc(0))
+      this.quqiAction.uploadByPath(parentId, fileName, tmpFile).then(rs => {
+        return this.reloadParentsDirectories(realPath)
+      }).then(() => {
+        _callback(null);
+      }).catch(_callback).then(() => {
+        fs.unlinkSync(tmpFile)
+      });
     }
   }
 
@@ -111,12 +131,25 @@ export class QuqiFileSystem extends FileSystem {
 
   protected _openWriteStream(path: Path, ctx: OpenWriteStreamInfo, callback: ReturnCallback<Writable>): void {
     console.log("_openWriteStream", path.toString());
-    const {realPath, parentId} = this.getRealPath(path);
+    const {realPath, parentId, resource} = this.getRealPath(path);
     let fileName = basename(realPath);
-    this.quqiAction.upload(parentId, fileName).then(rs => {
-      callback(null, rs.writeStream);
-    }).catch(e => {
-      callback(e, null)
+    // 先删除临时文件
+    this.quqiAction.delete(resource.nid).then(() => {
+      // 把文件内容接收到本地临时文件再上传
+      const tmpFile = pathJoin(tmpDir, `tmp-file-${new Date().getTime()}`);
+      const stream = fs.createWriteStream(tmpFile);
+      stream.on('finish', () => {
+        this.quqiAction.uploadByPath(parentId, fileName, tmpFile).then(rs => {
+          let now = Math.floor(new Date().getTime() / 1000);
+          let size = fs.statSync(tmpFile).size;
+          let data = rs.data.data;
+          this.resources[realPath] = new QuqiFileSystemResource(data.node_id, ResourceType.File, parentId, now, size)
+          // return this.reloadParentsDirectories(realPath)
+        }).then(() => {
+          fs.unlinkSync(tmpFile)
+        });
+      })
+      callback(null, stream);
     })
   }
 
@@ -164,7 +197,8 @@ export class QuqiFileSystem extends FileSystem {
     console.log("getPropertyFromResource", path.toString(), propertyName);
     if (!resource) {
       resource = new QuqiFileSystemResource(0, ResourceType.File, 0, 0, 0);
-      this.resources[path.toString()] = resource;
+      // TODO 不能保存?
+      // this.resources[path.toString()] = resource;
     }
     console.log("getPropertyFromResource", propertyName, resource[propertyName]);
     callback(null, resource[propertyName]);
@@ -182,18 +216,7 @@ export class QuqiFileSystem extends FileSystem {
     console.log("_readDir", path.toString());
     const {nodeId, realPath} = this.getRealPath(path);
 
-    this.quqiAction.list(nodeId).then(rs => {
-      const files = [];
-      rs.data.dir.forEach(item => {
-        let itemPath = pathJoin(realPath, item.name);
-        files.push(itemPath)
-        this.resources[itemPath] = new QuqiFileSystemResource(item.nid, ResourceType.Directory, item.parent_id, item.add_time, 0);
-      })
-      rs.data.file.forEach(item => {
-        let itemPath = pathJoin(realPath, item.name);
-        files.push(itemPath)
-        this.resources[itemPath] = new QuqiFileSystemResource(item.nid, ResourceType.File, item.parent_id, item.add_time, item.size);
-      })
+    this.requestDirList(nodeId, realPath).then(files => {
       callback(null, files);
     }).catch(e => {
       callback(e, null)
@@ -236,7 +259,7 @@ export class QuqiFileSystem extends FileSystem {
       if (!resource) {
         let errorMessage = "文件不存在: " + path.toString();
         console.error("_type", errorMessage);
-        callback(new Error(errorMessage), null);
+        callback(Errors.ResourceNotFound, null);
       } else
         callback(null, resource.type);
     }
@@ -270,17 +293,28 @@ export class QuqiFileSystem extends FileSystem {
   }
 
   private requestDirList(nid, dir) {
+    const files = [];
     return this.quqiAction.list(nid).then(rs => {
       rs.data.dir.forEach(item => {
         let itemPath = pathJoin(dir, item.name);
+        files.push(itemPath)
         this.resources[itemPath] = new QuqiFileSystemResource(item.nid, ResourceType.Directory, item.parent_id, item.add_time, 0);
       })
       rs.data.file.forEach(item => {
-        let itemPath = pathJoin(dir, item.name);
+        let fileName = item.name;
+        // TODO 确认文件名是否显示后缀的规则
+        if (item.filetype !== "q-default" && item.ext) {
+          fileName += "." + item.ext;
+        }
+        let itemPath = pathJoin(dir, fileName);
+        files.push(itemPath)
         this.resources[itemPath] = new QuqiFileSystemResource(item.nid, ResourceType.File, item.parent_id, item.add_time, item.size);
       })
     }).catch(e => {
       console.error(e);
+    }).then(() => {
+      console.log("requestDirList", files);
+      return files;
     });
   }
 }
