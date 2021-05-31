@@ -129,6 +129,7 @@ export class QuqiFileSystem extends FileSystem {
     const tmpFile = pathJoin(tmpDir, `tmp-file-${new Date().getTime()}`);
     const stream = fs.createWriteStream(tmpFile);
     stream.on('finish', () => {
+      console.log("文件内容接收完成");
       this.quqiAction.uploadByPath(parentId, fileName, tmpFile).then(rs => {
         let now = Math.floor(new Date().getTime() / 1000);
         let size = fs.statSync(tmpFile).size;
@@ -193,10 +194,12 @@ export class QuqiFileSystem extends FileSystem {
   }
 
   protected _lockManager(path: Path, ctx: LockManagerInfo, callback: ReturnCallback<ILockManager>): void {
+    console.log("_lockManager", path.toString());
     this.getPropertyFromResource(path, ctx, 'locks', callback);
   }
 
   protected _propertyManager(path: Path, ctx: PropertyManagerInfo, callback: ReturnCallback<IPropertyManager>): void {
+    console.log("_propertyManager", path.toString());
     this.getPropertyFromResource(path, ctx, 'props', callback);
   }
 
@@ -226,6 +229,7 @@ export class QuqiFileSystem extends FileSystem {
   }
 
   protected getStatDateProperty(path: Path, ctx: any, propertyName: string, callback: ReturnCallback<number>): void {
+    console.log("getStatDateProperty", path.toString(), propertyName)
     this.getStatProperty(path, ctx, propertyName, (e, value) => callback(e, value ? (value as Date).valueOf() : value));
   }
 
