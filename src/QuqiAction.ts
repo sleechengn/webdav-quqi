@@ -4,7 +4,8 @@ import * as path from 'path';
 import * as when from 'when';
 import * as _ from 'lodash';
 import * as FormData from 'form-data';
-const { Writable } = require('stream');
+
+const {Writable} = require('stream');
 
 import QuqiUtils from './QuqiUtils';
 
@@ -47,7 +48,7 @@ export default class QuqiAction {
   }
 
   public async upload(dirId: number, fileName: string) {
-    return new Promise((resolve)=>{
+    return new Promise((resolve) => {
       const writeStream = new Writable();
       // writeStream.on("finish", async ()=>{
       //   let url = 'https://quqi.com/api/upload/v1/file/init';
@@ -106,7 +107,7 @@ export default class QuqiAction {
       //     })
       //   }
       // })
-      resolve (writeStream)
+      resolve(writeStream)
     })
   }
 
@@ -163,7 +164,13 @@ export default class QuqiAction {
       if (!data.err) {
         return data;
       } else {
-        throw new Error(data.msg);
+        if (data.err === 98) {
+          return this.login().then(() => {
+            return this.doAction(url, postData, setting);
+          })
+        } else {
+          throw new Error(data.msg);
+        }
       }
     });
   }
