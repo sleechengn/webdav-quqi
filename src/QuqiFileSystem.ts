@@ -101,16 +101,8 @@ export class QuqiFileSystem extends FileSystem {
         _callback(e);
       })
     } else {
-      // 先上传一个临时文件
-      const tmpFile = pathJoin(tmpDir, `tmp-lock-file-${new Date().getTime()}`);
-      fs.writeFileSync(tmpFile, Buffer.alloc(0))
-      this.quqiAction.uploadByPath(parentId, fileName, tmpFile).then(rs => {
-        return this.reloadParentsDirectories(realPath)
-      }).then(() => {
-        _callback(null);
-      }).catch(_callback).then(() => {
-        fs.unlinkSync(tmpFile)
-      });
+      // TODO 曲奇不支持覆盖上传，跳过创建文件的步骤
+      _callback(null);
     }
   }
 
@@ -133,24 +125,20 @@ export class QuqiFileSystem extends FileSystem {
     console.log("_openWriteStream", path.toString());
     const {realPath, parentId, resource} = this.getRealPath(path);
     let fileName = basename(realPath);
-    // 先删除临时文件
-    this.quqiAction.delete(resource.nid).then(() => {
-      // 把文件内容接收到本地临时文件再上传
-      const tmpFile = pathJoin(tmpDir, `tmp-file-${new Date().getTime()}`);
-      const stream = fs.createWriteStream(tmpFile);
-      stream.on('finish', () => {
-        this.quqiAction.uploadByPath(parentId, fileName, tmpFile).then(rs => {
-          let now = Math.floor(new Date().getTime() / 1000);
-          let size = fs.statSync(tmpFile).size;
-          let data = rs.data.data;
-          this.resources[realPath] = new QuqiFileSystemResource(data.node_id, ResourceType.File, parentId, now, size)
-          // return this.reloadParentsDirectories(realPath)
-        }).then(() => {
-          fs.unlinkSync(tmpFile)
-        });
-      })
-      callback(null, stream);
+    // 把文件内容接收到本地临时文件再上传
+    const tmpFile = pathJoin(tmpDir, `tmp-file-${new Date().getTime()}`);
+    const stream = fs.createWriteStream(tmpFile);
+    stream.on('finish', () => {
+      this.quqiAction.uploadByPath(parentId, fileName, tmpFile).then(rs => {
+        let now = Math.floor(new Date().getTime() / 1000);
+        let size = fs.statSync(tmpFile).size;
+        let data = rs.data.data;
+        this.resources[realPath] = new QuqiFileSystemResource(data.node_id, ResourceType.File, parentId, now, size)
+      }).then(() => {
+        fs.unlinkSync(tmpFile)
+      });
     })
+    callback(null, stream);
   }
 
   protected _openReadStream(path: Path, ctx: OpenReadStreamInfo, callback: ReturnCallback<Readable>): void {
