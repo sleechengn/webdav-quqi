@@ -1,5 +1,5 @@
 // TypeScript
-import {v2 as webdav} from 'webdav-server'
+import {v2 as webdav} from './npm-WebDAV-Server'
 import {QuqiFileSystem} from "./QuqiFileSystem";
 
 // User manager (tells who are the users)

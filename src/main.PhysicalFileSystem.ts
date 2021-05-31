@@ -1,6 +1,5 @@
 // TypeScript
-import {v2 as webdav} from 'webdav-server'
-import {QuqiFileSystem} from "./QuqiFileSystem";
+import {v2 as webdav} from './npm-WebDAV-Server'
 
 // User manager (tells who are the users)
 const userManager = new webdav.SimpleUserManager();

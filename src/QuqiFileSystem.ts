@@ -1,16 +1,16 @@
-import {FileSystem} from "webdav-server/lib/manager/v2/fileSystem/FileSystem";
-import {Path} from "webdav-server/lib/manager/v2/Path";
-import {Errors} from "webdav-server/lib/index.v2";
+import {FileSystem} from "./npm-WebDAV-Server/manager/v2/fileSystem/FileSystem";
+import {Path} from "./npm-WebDAV-Server/manager/v2/Path";
+import {Errors} from "./npm-WebDAV-Server";
 import {
   CreateInfo, CreationDateInfo, DeleteInfo, LastModifiedDateInfo,
   LockManagerInfo, MoveInfo, OpenReadStreamInfo, OpenWriteStreamInfo,
   PropertyManagerInfo, ReadDirInfo, SizeInfo,
   TypeInfo
-} from "webdav-server/lib/manager/v2/fileSystem/ContextInfo";
-import {ILockManager, LocalLockManager} from "webdav-server/lib/manager/v2/fileSystem/LockManager";
-import {IPropertyManager, LocalPropertyManager} from "webdav-server/lib/manager/v2/fileSystem/PropertyManager";
+} from "./npm-WebDAV-Server/manager/v2/fileSystem/ContextInfo";
+import {ILockManager, LocalLockManager} from "./npm-WebDAV-Server/manager/v2/fileSystem/LockManager";
+import {IPropertyManager, LocalPropertyManager} from "./npm-WebDAV-Server/manager/v2/fileSystem/PropertyManager";
 import {ResourceType, ReturnCallback, SimpleCallback} from "webdav-server";
-import {FileSystemSerializer} from "webdav-server/lib/manager/v2/fileSystem/Serialization";
+import {FileSystemSerializer} from "./npm-WebDAV-Server/manager/v2/fileSystem/Serialization";
 import {join as pathJoin, basename, dirname} from 'path'
 import {Readable, Writable} from "stream";
 import * as when from "when";
