@@ -30,7 +30,7 @@ export class Resource
     {
         this.fs.delete(this.context, this.path, _depth, _callback);
     }
-    
+
     openWriteStream(callback : Return2Callback<Writable, boolean>) : void
     openWriteStream(estimatedSize : number, callback : Return2Callback<Writable, boolean>) : void
     openWriteStream(targetSource : boolean, callback : Return2Callback<Writable, boolean>) : void
@@ -38,7 +38,7 @@ export class Resource
     openWriteStream(mode : OpenWriteStreamMode, callback : Return2Callback<Writable, boolean>) : void
     openWriteStream(mode : OpenWriteStreamMode, estimatedSize : number, callback : Return2Callback<Writable, boolean>) : void
     openWriteStream(mode : OpenWriteStreamMode, targetSource : boolean, callback : Return2Callback<Writable, boolean>) : void
-    openWriteStream(mode : OpenWriteStreamMode, targetSource : boolean, estimatedSize : number, callback : Return2Callback<Writable, boolean>) : void
+    openWriteStream(mode : OpenWriteStreamMode, targetSource : boolean, estimatedSize : number, callback : Return2Callback<[Writable, (SimpleCallback)=>void], boolean>) : void
     openWriteStream(_mode : any, _targetSource ?: any, _estimatedSize ?: any, _callback ?: Return2Callback<Writable, boolean>) : void
     {
         this.fs.openWriteStream(this.context, this.path, _mode, _targetSource, _estimatedSize, _callback);
@@ -52,7 +52,7 @@ export class Resource
     {
         this.fs.openReadStream(this.context, this.path, _targetSource, _estimatedSize, _callback);
     }
-    
+
     copy(pathTo : Path | string, callback : ReturnCallback<boolean>) : void
     copy(pathTo : Path | string, depth : number, callback : ReturnCallback<boolean>) : void
     copy(pathTo : Path | string, overwrite : boolean, callback : ReturnCallback<boolean>) : void
@@ -75,7 +75,7 @@ export class Resource
     {
         this.fs.size(this.context, this.path, _targetSource, _callback);
     }
-    
+
     addSubTree(subTree : SubTree, callback : SimpleCallback)
     addSubTree(resourceType : ResourceType, callback : SimpleCallback)
     addSubTree(tree : any, callback : SimpleCallback)
@@ -143,14 +143,14 @@ export class Resource
     {
         this.fs.type(this.context, this.path, callback);
     }
-    
+
     listDeepLocks(callback : ReturnCallback<{ [path : string] : Lock[] }>)
     listDeepLocks(depth : number, callback : ReturnCallback<{ [path : string] : Lock[] }>)
     listDeepLocks(_depth : any, _callback ?: ReturnCallback<{ [path : string] : Lock[] }>)
     {
         this.fs.listDeepLocks(this.context, this.path, _depth, _callback);
     }
-    
+
     isLocked(callback : ReturnCallback<boolean>)
     isLocked(depth : number, callback : ReturnCallback<boolean>)
     isLocked(_depth : any, _callback ?: ReturnCallback<boolean>)
@@ -159,14 +159,14 @@ export class Resource
     }
 
     // Async methods
-        
+
     deleteAsync() : Promise<void>
     deleteAsync(depth : number) : Promise<void>
     deleteAsync(_depth ?: any) : Promise<void>
     {
         return this.fs.deleteAsync(this.context, this.path, _depth);
     }
-    
+
     openWriteStreamAsync() : Promise<{ stream : Writable, created : boolean }>
     openWriteStreamAsync(estimatedSize : number) : Promise<{ stream : Writable, created : boolean }>
     openWriteStreamAsync(targetSource : boolean) : Promise<{ stream : Writable, created : boolean }>
@@ -188,7 +188,7 @@ export class Resource
     {
         return this.fs.openReadStreamAsync(this.context, this.path, _targetSource, _estimatedSize);
     }
-    
+
     copyAsync(pathTo : Path | string) : Promise<boolean>
     copyAsync(pathTo : Path | string, depth : number) : Promise<boolean>
     copyAsync(pathTo : Path | string, overwrite : boolean) : Promise<boolean>
@@ -211,7 +211,7 @@ export class Resource
     {
         return this.fs.sizeAsync(this.context, this.path, _targetSource);
     }
-    
+
     addSubTreeAsync(subTree : SubTree, callback : SimpleCallback)
     addSubTreeAsync(resourceType : ResourceType, callback : SimpleCallback)
     addSubTreeAsync(tree : any, callback : SimpleCallback)
@@ -279,14 +279,14 @@ export class Resource
     {
         return this.fs.typeAsync(this.context, this.path);
     }
-    
+
     listDeepLocksAsync() : Promise<{ [path : string] : Lock[] }>
     listDeepLocksAsync(depth : number) : Promise<{ [path : string] : Lock[] }>
     listDeepLocksAsync(_depth ?: any) : Promise<{ [path : string] : Lock[] }>
     {
         return this.fs.listDeepLocksAsync(this.context, this.path, _depth);
     }
-    
+
     isLockedAsync() : Promise<boolean>
     isLockedAsync(depth : number) : Promise<boolean>
     isLockedAsync(_depth ?: any) : Promise<boolean>

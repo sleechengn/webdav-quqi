@@ -35,7 +35,7 @@ export default class implements HTTPMethod
                             return callback();
                         }
 
-                        r.openWriteStream(mode, targetSource, ctx.headers.contentLength, (e, wStream, created) => {
+                        r.openWriteStream(mode, targetSource, ctx.headers.contentLength, (e, result, created) => {
                             if(e)
                             {
                                 if(!ctx.setCodeFromError(e))
@@ -43,14 +43,18 @@ export default class implements HTTPMethod
                                 return callback();
                             }
 
+                            const [wStream, beforeFinished] = result;
+
                             inputStream.pipe(wStream);
                             wStream.on('finish', (e) => {
-                                if(created)
+                                beforeFinished(()=>{
+                                  if(created)
                                     ctx.setCode(HTTPCodes.Created);
-                                else
+                                  else
                                     ctx.setCode(HTTPCodes.OK);
-                                //ctx.invokeEvent('write', r);
-                                callback();
+                                  //ctx.invokeEvent('write', r);
+                                  callback();
+                                })
                             });
                             wStream.on('error', (e) => {
                                 if(!ctx.setCodeFromError(e))

@@ -121,25 +121,31 @@ export class QuqiFileSystem extends FileSystem {
     }).catch(callback);
   }
 
-  protected _openWriteStream(path: Path, ctx: OpenWriteStreamInfo, callback: ReturnCallback<Writable>): void {
+  protected _openWriteStream(path: Path, ctx: OpenWriteStreamInfo, callback: ReturnCallback<[Writable, (SimpleCallback)=>void]>): void {
     console.log("_openWriteStream", path.toString());
     const {realPath, parentId, resource} = this.getRealPath(path);
     let fileName = basename(realPath);
     // 把文件内容接收到本地临时文件再上传
     const tmpFile = pathJoin(tmpDir, `tmp-file-${new Date().getTime()}`);
     const stream = fs.createWriteStream(tmpFile);
-    stream.on('finish', () => {
+    callback(null, [stream, (_callback)=>{
       console.log("文件内容接收完成");
       this.quqiAction.uploadByPath(parentId, fileName, tmpFile).then(rs => {
         let now = Math.floor(new Date().getTime() / 1000);
         let size = fs.statSync(tmpFile).size;
+        // TODO 处理极速上传
         let data = rs.data.data;
         this.resources[realPath] = new QuqiFileSystemResource(data.node_id, ResourceType.File, parentId, now, size)
       }).then(() => {
         fs.unlinkSync(tmpFile)
+      }).then(()=>{
+        _callback();
       });
-    })
-    callback(null, stream);
+    }]);
+  }
+
+  protected _afterWriteStreamFinished() {
+    console.log("_afterWriteStreamFinished");
   }
 
   protected _openReadStream(path: Path, ctx: OpenReadStreamInfo, callback: ReturnCallback<Readable>): void {
