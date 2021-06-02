@@ -5,6 +5,7 @@ import * as _ from 'lodash';
 import * as FormData from 'form-data';
 
 import QuqiUtils from './QuqiUtils';
+import CosUpload from './CosUpload';
 
 export default class QuqiAction {
   session: string = "";
@@ -42,17 +43,28 @@ export default class QuqiAction {
     console.log(JSON.stringify(hash));
 
     const url = 'https://quqi.com/api/upload/v1/file/init';
-    const postData = `quqi_id=${this.quqiId}&parent_id=${dirId}&size=${stat.size}&file_name=${fileName}&md5=${hash.md5}&sha=${hash.sha}&is_slice=false`;
+    const postData = `quqi_id=${this.quqiId}&parent_id=${dirId}&size=${stat.size}&file_name=${fileName}&md5=${hash.md5}&sha=${hash.sha}&is_slice=true`;
     const job = await this.doAction(url, postData);
     console.log(JSON.stringify(job));
     if (job.data.exist) {
       console.log("极速上传成功");
-      return true;
+      return job.data;
     }
 
     if (job.data.upload_id) {
       // 大文件需要分片上传
       console.error("大文件需要分片上传");
+      const listPartsUrl = `${job.data.url}/upload/v1/listParts`;
+      const listPartsPostData = `token=d${job.data.token}&task_id=${job.data.task_id}`;
+      // const listPartsResult = await this.doAction(listPartsUrl, listPartsPostData);
+      // console.log("listPartsResult", listPartsResult);
+      const url = `${job.data.url}/upload/v1/tempKey?token=${job.data.token}&task_id=${job.data.task_id}`;
+      const tempKeyRs = await this.doAction(url);
+      await CosUpload.sliceUploadFile(tempKeyRs.data, job.data.bucket, job.data.key, filePath);
+      const finishUrl = `https://quqi.com/api/upload/v1/file/finish?quqi_id=${this.quqiId}`;
+      const finishPostData = `token=d${job.data.token}&task_id=${job.data.task_id}`;
+      const rs = await this.doAction(finishUrl, finishPostData);
+      return rs.data;
     } else {
       // 小文件直接上传
       let uploadUrl = `${job.data.url}/upload/v1/simpleUpload`;

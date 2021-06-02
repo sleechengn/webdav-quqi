@@ -5,6 +5,7 @@
   },
   "dependencies": {
     "axios": "^0.21.1",
+    "cos-nodejs-sdk-v5": "^2.9.17",
     "form-data": "^4.0.0",
     "lodash": "^4.17.21",
     "when": "^3.7.8",
