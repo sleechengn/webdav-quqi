@@ -6,6 +6,7 @@ import * as FormData from 'form-data';
 
 import QuqiUtils from './QuqiUtils';
 import CosUpload from './CosUpload';
+import config from './QuqiConfig';
 
 export default class QuqiAction {
   session: string = "";
@@ -39,11 +40,13 @@ export default class QuqiAction {
   public async uploadByPath(dirId: number, fileName: string, filePath: string) {
     const stat = fs.statSync(filePath);
     const readStream = fs.createReadStream(filePath)
-    const hash = await QuqiUtils.hash(filePath);
+    const buffer = fs.readFileSync(filePath);
+    const hash = await QuqiUtils.hash(buffer);
     console.log(JSON.stringify(hash));
 
     const url = 'https://quqi.com/api/upload/v1/file/init';
-    const postData = `quqi_id=${this.quqiId}&parent_id=${dirId}&size=${stat.size}&file_name=${fileName}&md5=${hash.md5}&sha=${hash.sha}&is_slice=true`;
+    const isSlice = (buffer.length > config.Simple_Size)?"true":"false";
+    const postData = `quqi_id=${this.quqiId}&parent_id=${dirId}&size=${stat.size}&file_name=${fileName}&md5=${hash.md5}&sha=${hash.sha}&is_slice=${isSlice}`;
     const job = await this.doAction(url, postData);
     console.log(JSON.stringify(job));
     if (job.data.exist) {

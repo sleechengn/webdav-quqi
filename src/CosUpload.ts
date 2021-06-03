@@ -1,14 +1,7 @@
 import * as COS from 'cos-nodejs-sdk-v5';
 import * as fs from 'fs';
 
-const config = {
-  FOLDER_UPLOAD_FILE_LIMIT: 500,
-  SINGLE_FILE_MAX_UPLOAD_SIZE: 1073741824,
-  Simple_Size: 4194304,
-  PART_SIZE: 2097152,
-  MAX_PART_NUM: 1e4,
-  Region: "ap-shanghai"
-}
+import config from './QuqiConfig';
 
 export default {
   sliceUploadFile(data, bucket, key, uploadId, filePath) {

@@ -1,9 +1,7 @@
 import * as crypto from 'crypto';
-import *  as fs from "fs";
 
 export default {
-  hash(filePath: string) {
-    let buffer = fs.readFileSync(filePath);
+  hash(buffer: Buffer) {
     let fsMd5 = crypto.createHash('md5');
     fsMd5.update(buffer);
     let md5 = fsMd5.digest('hex');

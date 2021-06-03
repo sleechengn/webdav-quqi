@@ -131,11 +131,10 @@ export class QuqiFileSystem extends FileSystem {
     callback(null, [stream, (_callback)=>{
       console.log("文件内容接收完成");
       this.quqiAction.uploadByPath(parentId, fileName, tmpFile).then(rs => {
-        console.log("文件内容上传完成", rs);
+        console.log("文件内容上传完成", JSON.stringify(rs));
         let now = Math.floor(new Date().getTime() / 1000);
         let size = fs.statSync(tmpFile).size;
-        let data = rs.data.data;
-        this.resources[realPath] = new QuqiFileSystemResource(data.node_id, ResourceType.File, parentId, now, size)
+        this.resources[realPath] = new QuqiFileSystemResource(rs.node_id, ResourceType.File, parentId, now, size)
       }).then(() => {
         fs.unlinkSync(tmpFile)
       }).then(()=>{
