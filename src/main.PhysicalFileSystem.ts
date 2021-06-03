@@ -19,6 +19,6 @@ server.afterRequest((arg, next) => {
   console.log('>>', arg.request.method, arg.fullUri(), '>', arg.response.statusCode, arg.response.statusMessage);
   next();
 })
-server.setFileSystem('/dav', new webdav.PhysicalFileSystem('/Users/tongjun/Downloads/webdav-test'), (success) => {
+server.setFileSystem('/dav', new webdav.PhysicalFileSystem('~/Downloads/webdav-test'), (success) => {
   server.start(() => console.log('READY'));
 })
