@@ -9,7 +9,7 @@ import * as path from 'path';
   await quqiAction.login();
   await quqiAction.list(rootDirId);
   // await quqiAction.mkdir(rootDirId, 'xxx1');
-  const uploadFile = "/Users/tongjun/Downloads/cloudbility-api-executor.jar";
+  const uploadFile = "/tmp/abc.exe";
   await quqiAction.uploadByPath(rootDirId, path.basename(uploadFile), uploadFile)
   // (await quqiAction.download(82)).pipe(fs.createWriteStream('/tmp/a'));
   // await quqiAction.rename(98, 'xxxe3')

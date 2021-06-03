@@ -54,15 +54,11 @@ export default class QuqiAction {
     if (job.data.upload_id) {
       // 大文件需要分片上传
       console.error("大文件需要分片上传");
-      const listPartsUrl = `${job.data.url}/upload/v1/listParts`;
-      const listPartsPostData = `token=d${job.data.token}&task_id=${job.data.task_id}`;
-      // const listPartsResult = await this.doAction(listPartsUrl, listPartsPostData);
-      // console.log("listPartsResult", listPartsResult);
       const url = `${job.data.url}/upload/v1/tempKey?token=${job.data.token}&task_id=${job.data.task_id}`;
       const tempKeyRs = await this.doAction(url);
-      await CosUpload.sliceUploadFile(tempKeyRs.data, job.data.bucket, job.data.key, filePath);
+      await CosUpload.sliceUploadFile(tempKeyRs.data, job.data.bucket, job.data.key, job.data.upload_id, filePath);
       const finishUrl = `https://quqi.com/api/upload/v1/file/finish?quqi_id=${this.quqiId}`;
-      const finishPostData = `token=d${job.data.token}&task_id=${job.data.task_id}`;
+      const finishPostData = `token=${job.data.token}&task_id=${job.data.task_id}`;
       const rs = await this.doAction(finishUrl, finishPostData);
       return rs.data;
     } else {
@@ -111,7 +107,7 @@ export default class QuqiAction {
   }
 
   public async download(nid: number) {
-    let url = `https://quqi.com/api/doc/getDownload?quqi_id=115540&node_id=${nid}`;
+    let url = `https://quqi.com/api/doc/getDownload?quqi_id=${this.quqiId}&node_id=${nid}`;
     return await this.doAction(url, null, {responseType: "stream"});
   }
 
@@ -143,12 +139,13 @@ export default class QuqiAction {
     console.log(url, postData)
     let options = {
       headers: {
-        'Cookie': `quqiid=${this.quqiId}; passport_id=${this.passportId}; session_key=${this.session}`
+        'cookie': `quqiid=${this.quqiId}; passport_id=${this.passportId}; session_key=${this.session}`,
       }
     }
     if (setting) {
       options = _.extend(options, setting);
     }
+    console.log(JSON.stringify(options))
     return when().then(() => {
       if (postData) {
         return axios.post(url, postData, options)
