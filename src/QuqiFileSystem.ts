@@ -143,10 +143,6 @@ export class QuqiFileSystem extends FileSystem {
     }]);
   }
 
-  protected _afterWriteStreamFinished() {
-    console.log("_afterWriteStreamFinished");
-  }
-
   protected _openReadStream(path: Path, ctx: OpenReadStreamInfo, callback: ReturnCallback<Readable>): void {
     console.log("_openReadStream", path.toString());
     const {nodeId} = this.getRealPath(path);
