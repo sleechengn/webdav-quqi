@@ -1,8 +1,8 @@
 {
   "scripts": {
     "dev": "supervisor -w build ./build/main.js",
-    "start": "tsc && node ./build/main.js",
-    "build": "tsc --project tsconfig_watch.json"
+    "start": "tsc --project tsconfig_no_watch.json && node ./build/main.js",
+    "build": "tsc"
   },
   "dependencies": {
     "@types/mime-types": "^2.1.0",

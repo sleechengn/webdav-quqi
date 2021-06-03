@@ -38,10 +38,10 @@ export class Resource
     openWriteStream(mode : OpenWriteStreamMode, callback : Return2Callback<Writable, boolean>) : void
     openWriteStream(mode : OpenWriteStreamMode, estimatedSize : number, callback : Return2Callback<Writable, boolean>) : void
     openWriteStream(mode : OpenWriteStreamMode, targetSource : boolean, callback : Return2Callback<Writable, boolean>) : void
-    openWriteStream(mode : OpenWriteStreamMode, targetSource : boolean, estimatedSize : number, callback : Return2Callback<[Writable, (SimpleCallback)=>void], boolean>) : void
-    openWriteStream(_mode : any, _targetSource ?: any, _estimatedSize ?: any, _callback ?: Return2Callback<[Writable, (SimpleCallback)=>void], boolean>) : void
+    openWriteStream(mode : OpenWriteStreamMode, targetSource : boolean, estimatedSize : number, callback : Return2Callback<Writable, boolean>) : void
+    openWriteStream(_mode : any, _targetSource ?: any, _estimatedSize ?: any, _callback ?: Return2Callback<Writable, boolean>) : void
     {
-        this.fs.openWriteStream(this.context, this.path, _mode, _targetSource, _estimatedSize, _callback[0]);
+        this.fs.openWriteStream(this.context, this.path, _mode, _targetSource, _estimatedSize, _callback);
     }
 
     openReadStream(callback : ReturnCallback<Readable>) : void
@@ -51,6 +51,10 @@ export class Resource
     openReadStream(_targetSource : any, _estimatedSize ?: any, _callback ?: ReturnCallback<Readable>) : void
     {
         this.fs.openReadStream(this.context, this.path, _targetSource, _estimatedSize, _callback);
+    }
+    onWriteStreamFinished(callback : SimpleCallback) : void
+    {
+      this.fs.onWriteStreamFinished(this.context, this.path, callback);
     }
 
     copy(pathTo : Path | string, callback : ReturnCallback<boolean>) : void

@@ -655,7 +655,7 @@ export abstract class FileSystem implements ISerializableFileSystem
                         estimatedSize,
                         targetSource,
                         mode
-                    }, (e, wStream) => callback(e, wStream[0], created));
+                    }, (e, wStream) => callback(e, wStream, created));
                 }
                 const go = (callback : Return2Callback<Writable, boolean>) =>
                 {
@@ -748,7 +748,16 @@ export abstract class FileSystem implements ISerializableFileSystem
             })
         })
     }
-    protected _openWriteStream?(path : Path, ctx : OpenWriteStreamInfo, callback : ReturnCallback<[Writable, (SimpleCallback)=>void]>) : void
+    protected _openWriteStream?(path : Path, ctx : OpenWriteStreamInfo, callback : ReturnCallback<Writable>) : void
+
+    onWriteStreamFinished(ctx : RequestContext, path : Path, callback: SimpleCallback) : void{
+      if(this._onWriteStreamFinished){
+        this._onWriteStreamFinished(path, ctx, callback);
+      }else{
+        callback();
+      }
+    }
+    protected _onWriteStreamFinished?(path : Path, ctx : RequestContext, callback : SimpleCallback) : void
 
     /**
      * Open a stream to read the content of the resource.

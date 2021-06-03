@@ -26,7 +26,6 @@ import { join as pathJoin } from 'path'
 import { Errors } from '../../../Errors'
 import { Path } from '../Path'
 import * as fs from 'fs'
-import {QuqiFileSystemResource} from "../../../../QuqiFileSystem";
 
 export class PhysicalFileSystemResource
 {
@@ -116,7 +115,7 @@ export class PhysicalFileSystem extends FileSystem
                 this.resources[path.toString()] = new PhysicalFileSystemResource();
             else if(e)
                 e = Errors.ResourceAlreadyExists;
-
+            
             _callback(e);
         }
 
@@ -152,7 +151,7 @@ export class PhysicalFileSystem extends FileSystem
         this.type(ctx.context, path, (e, type) => {
             if(e)
                 return callback(Errors.ResourceNotFound);
-
+            
             if(type.isDirectory)
             {
                 if(ctx.depth === 0)
@@ -169,7 +168,7 @@ export class PhysicalFileSystem extends FileSystem
                             nb = -1;
                             return callback(e);
                         }
-
+                        
                         if(--nb === 0)
                             fs.rmdir(realPath, callback);
                     }
@@ -183,20 +182,18 @@ export class PhysicalFileSystem extends FileSystem
         })
     }
 
-    protected _openWriteStream(path : Path, ctx : OpenWriteStreamInfo, callback : ReturnCallback<[Writable, (SimpleCallback)=>void]>) : void
+    protected _openWriteStream(path : Path, ctx : OpenWriteStreamInfo, callback : ReturnCallback<Writable>) : void
     {
         const { realPath, resource } = this.getRealPath(path);
 
         fs.open(realPath, 'w+', (e, fd) => {
             if(e)
                 return callback(Errors.ResourceNotFound);
-
+            
             if(!resource)
                 this.resources[path.toString()] = new PhysicalFileSystemResource();
-
-            callback(null, [fs.createWriteStream(null, { fd }), (_callback)=>{
-              _callback();
-            }]);
+            
+            callback(null, fs.createWriteStream(null, { fd }));
         })
     }
 
@@ -207,7 +204,7 @@ export class PhysicalFileSystem extends FileSystem
         fs.open(realPath, 'r', (e, fd) => {
             if(e)
                 return callback(Errors.ResourceNotFound);
-
+            
             callback(null, fs.createReadStream(null, { fd }));
         })
     }
@@ -237,7 +234,7 @@ export class PhysicalFileSystem extends FileSystem
             { // destination exists
                 if(!ctx.overwrite)
                     return callback(Errors.ResourceAlreadyExists);
-
+                
                 this.delete(ctx.context, pathTo, (e) => {
                     if(e)
                         return callback(e);
@@ -251,10 +248,10 @@ export class PhysicalFileSystem extends FileSystem
     {
         this.getStatProperty(path, ctx, 'size', callback);
     }
-
+    
     /**
      * Get a property of an existing resource (object property, not WebDAV property). If the resource doesn't exist, it is created.
-     *
+     * 
      * @param path Path of the resource
      * @param ctx Context of the method
      * @param propertyName Name of the property to get from the resource
@@ -290,7 +287,7 @@ export class PhysicalFileSystem extends FileSystem
             callback(e ? Errors.ResourceNotFound : null, files);
         });
     }
-
+    
     protected getStatProperty(path : Path, ctx : any, propertyName : string, callback : ReturnCallback<any>) : void
     {
         const { realPath } = this.getRealPath(path);
@@ -298,7 +295,7 @@ export class PhysicalFileSystem extends FileSystem
         fs.stat(realPath, (e, stat) => {
             if(e)
                 return callback(Errors.ResourceNotFound);
-
+            
             callback(null, stat[propertyName]);
         })
     }
@@ -324,7 +321,7 @@ export class PhysicalFileSystem extends FileSystem
         fs.stat(realPath, (e, stat) => {
             if(e)
                 return callback(Errors.ResourceNotFound);
-
+            
             callback(null, stat.isDirectory() ? ResourceType.Directory : ResourceType.File);
         })
     }

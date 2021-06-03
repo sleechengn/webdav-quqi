@@ -17,6 +17,7 @@ import * as when from "when";
 import * as fs from "fs";
 
 import QuqiAction from "./QuqiAction";
+import {RequestContext} from "./npm-WebDAV-Server/server/v2/RequestContext";
 
 const tmpDir = pathJoin(__dirname, "tmp")
 
@@ -58,6 +59,10 @@ export class QuqiFileSystem extends FileSystem {
   resources: {
     [path: string]: QuqiFileSystemResource
   }
+
+  uploadTmpFile: {
+    [path: string]: string
+  } = {}
 
   constructor(public username: string, public password: string, public cloudId: number, public rootDirId: number) {
     super(new QuqiSerializer());
@@ -121,26 +126,33 @@ export class QuqiFileSystem extends FileSystem {
     }).catch(callback);
   }
 
-  protected _openWriteStream(path: Path, ctx: OpenWriteStreamInfo, callback: ReturnCallback<[Writable, (SimpleCallback)=>void]>): void {
+  protected _openWriteStream(path: Path, ctx: OpenWriteStreamInfo, callback: ReturnCallback<Writable>): void {
     console.log("_openWriteStream", path.toString());
-    const {realPath, parentId, resource} = this.getRealPath(path);
-    let fileName = basename(realPath);
     // 把文件内容接收到本地临时文件再上传
     const tmpFile = pathJoin(tmpDir, `tmp-file-${new Date().getTime()}`);
+    this.uploadTmpFile[path.toString()] = tmpFile;
     const stream = fs.createWriteStream(tmpFile);
-    callback(null, [stream, (_callback)=>{
-      console.log("文件内容接收完成");
-      this.quqiAction.uploadByPath(parentId, fileName, tmpFile).then(rs => {
-        console.log("文件内容上传完成", JSON.stringify(rs));
-        let now = Math.floor(new Date().getTime() / 1000);
-        let size = fs.statSync(tmpFile).size;
-        this.resources[realPath] = new QuqiFileSystemResource(rs.node_id, ResourceType.File, parentId, now, size)
-      }).then(() => {
-        fs.unlinkSync(tmpFile)
-      }).then(()=>{
-        _callback();
-      });
-    }]);
+    callback(null, stream);
+  }
+
+  protected _onWriteStreamFinished(path: Path, ctx: RequestContext, callback: SimpleCallback): void {
+    console.log("_onWriteStreamFinished", path.toString());
+    const {realPath, parentId, resource} = this.getRealPath(path);
+    let fileName = basename(realPath);
+    console.log("文件内容接收完成");
+    const tmpFile = this.uploadTmpFile[realPath];
+    this.quqiAction.uploadByPath(parentId, fileName, tmpFile).then(rs => {
+      console.log("文件内容上传完成", JSON.stringify(rs));
+      let now = Math.floor(new Date().getTime() / 1000);
+      let size = fs.statSync(tmpFile).size;
+      this.resources[realPath] = new QuqiFileSystemResource(rs.node_id, ResourceType.File, parentId, now, size)
+    }).then(() => {
+      fs.unlinkSync(tmpFile)
+    }).then(() => {
+      callback(null);
+    }).catch(e => {
+      callback(e)
+    })
   }
 
   protected _openReadStream(path: Path, ctx: OpenReadStreamInfo, callback: ReturnCallback<Readable>): void {
