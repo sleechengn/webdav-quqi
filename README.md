@@ -1,5 +1,14 @@
-# webdav-quqi
+# 用途
+将曲奇网盘的API转成webdav服务
 
+# 用法
+```
+npm install
+export QUQI_ACCOUNT=手机号; export QUQI_PASSWORD=密码; export QUQI_CLOUD_ID=私有云的ID; export QUQI_ROOT_DIR_ID=根目录ID;
+npm start
+
+```
+![获取ID的方式](id.png)
 
 ## TODO
 - [x] 列出子目录
