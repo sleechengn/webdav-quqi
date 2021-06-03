@@ -165,7 +165,7 @@ export class VirtualFileSystem extends FileSystem
             '/': new VirtualFileSystemResource(ResourceType.Directory)
         };
     }
-    
+
     protected _fastExistCheck(ctx : RequestContext, path : Path, callback : (exists : boolean) => void) : void
     {
         callback(this.resources[path.toString()] !== undefined);
@@ -187,16 +187,16 @@ export class VirtualFileSystem extends FileSystem
         }
 
         delete this.resources[path.toString()];
-        
+
         callback();
     }
 
-    protected _openWriteStream(path : Path, ctx : OpenWriteStreamInfo, callback : ReturnCallback<Writable>) : void
+    protected _openWriteStream(path : Path, ctx : OpenWriteStreamInfo, callback : ReturnCallback<[Writable, (SimpleCallback)=>void]>) : void
     {
         const resource = this.resources[path.toString()];
         if(resource === undefined)
             return callback(Errors.ResourceNotFound);
-        
+
         const content : Buffer[] = [];
         const stream = new VirtualFileWritable(content);
         stream.on('finish', () => {
@@ -204,7 +204,9 @@ export class VirtualFileSystem extends FileSystem
             resource.size = content.map((c) => c.length).reduce((s, n) => s + n, 0);
             VirtualFileSystemResource.updateLastModified(resource);
         })
-        callback(null, stream);
+        callback(null, [stream, (_callback)=>{
+          _callback();
+        }]);
     }
 
     protected _openReadStream(path : Path, ctx : OpenReadStreamInfo, callback : ReturnCallback<Readable>) : void
@@ -212,7 +214,7 @@ export class VirtualFileSystem extends FileSystem
         const resource = this.resources[path.toString()];
         if(resource === undefined)
             return callback(Errors.ResourceNotFound);
-        
+
         callback(null, new VirtualFileReadable(resource.content));
     }
 
@@ -248,10 +250,10 @@ export class VirtualFileSystem extends FileSystem
 
         callback(null, children);
     }
-    
+
     /**
      * Get a property of an existing resource (object property, not WebDAV property). If the resource doesn't exist, it is created.
-     * 
+     *
      * @param path Path of the resource
      * @param ctx Context of the method
      * @param propertyName Name of the property to get from the resource
@@ -262,7 +264,7 @@ export class VirtualFileSystem extends FileSystem
         const resource = this.resources[path.toString()];
         if(!resource)
             return callback(Errors.ResourceNotFound);
-        
+
         callback(null, resource[propertyName]);
     }
 

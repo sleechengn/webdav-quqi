@@ -1,14 +1,25 @@
 {
   "scripts": {
     "dev": "supervisor -w build ./build/main.js",
-    "build": "tsc"
+    "start": "tsc && node ./build/main.js",
+    "build": "tsc --project tsconfig_watch.json"
   },
   "dependencies": {
+    "@types/mime-types": "^2.1.0",
+    "@types/node": "^7.0.64",
+    "@types/request": "0.0.44",
     "axios": "^0.21.1",
     "cos-nodejs-sdk-v5": "^2.9.17",
+    "express": "^4.16.4",
     "form-data": "^4.0.0",
     "lodash": "^4.17.21",
+    "request": "^2.85.0",
+    "safe-regex": "^1.1.0",
+    "tslint": "^5.20.1",
+    "typescript": "^3.7.2",
+    "webdav-fs": "^1.10.1",
     "when": "^3.7.8",
+    "xml-js": "^1.4.1",
     "xml-js-builder": "^1.0.3"
   },
   "devDependencies": {

@@ -655,7 +655,7 @@ export abstract class FileSystem implements ISerializableFileSystem
                         estimatedSize,
                         targetSource,
                         mode
-                    }, (e, wStream) => callback(e, wStream, created));
+                    }, (e, wStream) => callback(e, wStream[0], created));
                 }
                 const go = (callback : Return2Callback<Writable, boolean>) =>
                 {
@@ -2027,9 +2027,11 @@ export abstract class FileSystem implements ISerializableFileSystem
                 .each(Object.keys(tree), (name, cb) => {
                     const value = tree[name];
                     const childPath = rootPath.getChildPath(name);
-                    if(value.constructor === ResourceType || value.constructor === String || value.constructor === Buffer)
+                    if(value.constructor === ResourceType || value.constructor === Buffer)
                     {
-                        this.addSubTree(ctx, childPath, value, cb)
+                      this.addSubTree(ctx, childPath, value, cb)
+                    }else if(value.constructor === String){
+                      this.addSubTree(ctx, childPath, value.toString(), cb)
                     }
                     else
                     {

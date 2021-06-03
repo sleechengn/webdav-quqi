@@ -39,9 +39,9 @@ export class Resource
     openWriteStream(mode : OpenWriteStreamMode, estimatedSize : number, callback : Return2Callback<Writable, boolean>) : void
     openWriteStream(mode : OpenWriteStreamMode, targetSource : boolean, callback : Return2Callback<Writable, boolean>) : void
     openWriteStream(mode : OpenWriteStreamMode, targetSource : boolean, estimatedSize : number, callback : Return2Callback<[Writable, (SimpleCallback)=>void], boolean>) : void
-    openWriteStream(_mode : any, _targetSource ?: any, _estimatedSize ?: any, _callback ?: Return2Callback<Writable, boolean>) : void
+    openWriteStream(_mode : any, _targetSource ?: any, _estimatedSize ?: any, _callback ?: Return2Callback<[Writable, (SimpleCallback)=>void], boolean>) : void
     {
-        this.fs.openWriteStream(this.context, this.path, _mode, _targetSource, _estimatedSize, _callback);
+        this.fs.openWriteStream(this.context, this.path, _mode, _targetSource, _estimatedSize, _callback[0]);
     }
 
     openReadStream(callback : ReturnCallback<Readable>) : void
